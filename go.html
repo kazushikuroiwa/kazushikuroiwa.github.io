@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投資信託データ送信</title>
+<style>
+body{font-family:-apple-system,"Noto Sans JP",sans-serif;background:#F3F4F6;margin:0;padding:24px;color:#14151A;}
+.box{max-width:480px;margin:40px auto;background:#fff;border-radius:14px;padding:22px;box-shadow:0 2px 12px rgba(0,0,0,.08);}
+h1{font-size:17px;margin:0 0 14px;}
+#msg{font-size:16px;line-height:1.7;white-space:pre-line;}
+.ok{color:#0D9488;font-weight:700;}
+.ng{color:#DC2626;font-weight:700;}
+small{display:block;margin-top:14px;color:#6B7280;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>📤 投資信託データ送信</h1>
+  <div id="msg">送信中...</div>
+  <small id="detail"></small>
+</div>
+<script>
+var GAS_URL = "https://script.google.com/macros/s/AKfycbx4Z6_vBkpWSDT1kKJag86J2b8MDvQOghZhmRd6W-XUQbBQycRxNTXdlaSJ5RvpqYZsXw/exec";
+
+(function () {
+  var msg = document.getElementById("msg");
+  var detail = document.getElementById("detail");
+  var query = location.search;
+
+  if (!query || query.indexOf("mode=") === -1) {
+    msg.innerHTML = '<span class="ng">❌ 送信内容（mode=…）がありません</span>';
+    return;
+  }
+
+  detail.textContent = query.replace(/token=[^&]*/, "token=***");
+
+  fetch(GAS_URL + query)
+    .then(function (res) { return res.text(); })
+    .then(function (text) {
+      var success = text.indexOf("成功") !== -1;
+      msg.innerHTML = '<span class="' + (success ? "ok" : "ng") + '"></span>';
+      msg.firstChild.textContent = (success ? "✅ " : "❌ ") + text;
+    })
+    .catch(function () {
+      location.replace(GAS_URL + query);
+    });
+})();
+</script>
+</body>
+</html>
