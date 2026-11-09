@@ -12,21 +12,29 @@ h1{font-size:17px;margin:0 0 14px;}
 .ok{color:#0D9488;font-weight:700;}
 .ng{color:#DC2626;font-weight:700;}
 small{display:block;margin-top:14px;color:#6B7280;font-size:12px;}
+#closeNote{color:#6B7280;font-size:13px;margin-top:10px;white-space:normal;}
 </style>
 </head>
 <body>
 <div class="box">
   <h1>📤 投資信託データ送信</h1>
   <div id="msg">送信中...</div>
+  <div id="closeNote"></div>
   <small id="detail"></small>
 </div>
 <script>
+// ★デプロイURLを変えたときは、この1行だけを書き換えます（Geminiの指示文は変更不要）
 var GAS_URL = "https://script.google.com/macros/s/AKfycbx4Z6_vBkpWSDT1kKJag86J2b8MDvQOghZhmRd6W-XUQbBQycRxNTXdlaSJ5RvpqYZsXw/exec";
+
+// 成功したら、自動でこのタブを閉じる（失敗したときは閉じず、エラーを表示したままにする）
+var AUTO_CLOSE = true;      // 自動で閉じたくないときは false にする
+var AUTO_CLOSE_MS = 1500;   // 成功表示を見せてから閉じるまでの時間（ミリ秒）
 
 (function () {
   var msg = document.getElementById("msg");
   var detail = document.getElementById("detail");
-  var query = location.search;
+  var closeNote = document.getElementById("closeNote");
+  var query = location.search; // 例: ?mode=momentum_calc&sheet=normal&token=...&fund=US&value=-0.81
 
   if (!query || query.indexOf("mode=") === -1) {
     msg.innerHTML = '<span class="ng">❌ 送信内容（mode=…）がありません</span>';
@@ -35,14 +43,27 @@ var GAS_URL = "https://script.google.com/macros/s/AKfycbx4Z6_vBkpWSDT1kKJag86J2b
 
   detail.textContent = query.replace(/token=[^&]*/, "token=***");
 
+  function closeSoon() {
+    closeNote.textContent = "約" + (AUTO_CLOSE_MS / 1000) + "秒後に、このタブを自動で閉じます。";
+    setTimeout(function () {
+      window.close();
+      // 閉じられなかった場合（ブラウザの制限）は、ここが実行されて案内を出す
+      setTimeout(function () {
+        closeNote.textContent = "自動で閉じられませんでした。このタブは手動で閉じてください。";
+      }, 600);
+    }, AUTO_CLOSE_MS);
+  }
+
   fetch(GAS_URL + query)
     .then(function (res) { return res.text(); })
     .then(function (text) {
       var success = text.indexOf("成功") !== -1;
       msg.innerHTML = '<span class="' + (success ? "ok" : "ng") + '"></span>';
       msg.firstChild.textContent = (success ? "✅ " : "❌ ") + text;
+      if (success && AUTO_CLOSE) closeSoon();
     })
     .catch(function () {
+      // 通信方式の都合で受け取れなかった場合は、GAS側へ直接移動して送信する
       location.replace(GAS_URL + query);
     });
 })();
